@@ -1,16 +1,5 @@
 import readlineSync from 'readline-sync';
 
-export const createAbilitiesArray = (initialObj) => {
-  const obj = initialObj;
-  let newObj;
-  if (obj.moves) {
-    newObj = obj.moves.map((el) => el.name);
-  } else {
-    console.log("Object does not contain 'moves'");
-  }
-  return newObj;
-};
-
 export function getRandomInt(max) {
   return Math.floor(Math.random() * max);
 }

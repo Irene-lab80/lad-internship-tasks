@@ -1,21 +1,46 @@
+/* eslint-disable no-unused-vars */
 import readlineSync from 'readline-sync';
 import { monster, mage } from './players.js';
-import { createAbilitiesArray, getRandomInt, getHealthDifficulty } from './common.js';
+import { getRandomInt, getHealthDifficulty } from './common.js';
 
-function startGame(player1, player2) {
-  const computer = player1;
-  const player = player2;
+// create state for players
+const computer = { ...monster };
+const player = { ...mage };
 
+// create currentCooldown, isOnCooldown properties for each player
+player.moves.forEach((el) => {
+  el.currentCooldown = 0;
+  el.isOnCooldown = false;
+});
+
+computer.moves.forEach((el) => {
+  el.currentCooldown = 0;
+  el.isOnCooldown = false;
+});
+
+function createChoiceArray(arr) {
+  const newArr = [];
+  arr.forEach((el) => {
+    if (el.isOnCooldown === false) {
+      newArr.push(el.name);
+    }
+  });
+  return newArr;
+}
+
+function startGame() {
+  // set player health
   player.maxHealth = getHealthDifficulty();
 
-  const mageMoves = createAbilitiesArray(player);
-  const computerMoves = createAbilitiesArray(computer);
+  // create abilities state object
+  const computerMoves = [...computer.moves];
+  const mageMoves = [...player.moves];
 
+  // set func variables
   let move = 0; // computer's first
   let round = 1;
-  let compActionIndex;
-  let playerActionIndex;
-
+  let computerMoveID;
+  let playerMoveID;
   console.log('ИГРА НАЧАЛАСЬ \nПервым ходит компьютер');
 
   while (computer.maxHealth > 0 || player.maxHealth > 0) {
@@ -23,27 +48,75 @@ function startGame(player1, player2) {
 
     if (move % 2 === 0) { // computer's turn
       console.log(`Ходит ${computer.name}. Здоровье: ${computer.maxHealth}`);
-      compActionIndex = getRandomInt(computerMoves.length);
-      computer.currentHealth = computer.maxHealth;
-      console.log(`${computer.name} выбрал "${computerMoves[compActionIndex]}".\n`);
+      const tempComputerMoves = createChoiceArray(computerMoves);
+      const index = getRandomInt(tempComputerMoves.length);
+      computerMoveID = tempComputerMoves[index];
+      console.log(`${computer.name} выбрал "${computerMoveID}".\n`);
       move += 1;
-    } else { // player's turn
+    } else if (move % 2 === 1) { // player's turn
       console.log(`Ходит ${player.name}. Здоровье: ${player.maxHealth}\n`);
-      playerActionIndex = readlineSync.keyInSelect(mageMoves, 'Выберите ход:');
-      console.log(`${player.name} выбрал "${mageMoves[playerActionIndex]}".\n`);
+      const tempMageMoves = createChoiceArray(mageMoves);
+      // get action from player
+      const index = readlineSync.keyInSelect(tempMageMoves, 'Выберите ход:');
+      // get move id
+      playerMoveID = tempMageMoves[index];
+      console.log(`${player.name} выбрал "${playerMoveID}".\n`);
       move += 1;
+      console.log(index);
+      console.log(playerMoveID);
     }
 
     if (move % 2 === 0 && move !== 0) {
       // damage to computer
-      computer.maxHealth -= player.moves[playerActionIndex].physicalDmg * (1 - computer.moves[compActionIndex].physicArmorPercents / 100);
-      computer.maxHealth -= player.moves[playerActionIndex].magicDmg * (1 - computer.moves[compActionIndex].magicArmorPercents / 100);
+      computer.maxHealth -= mageMoves.find((x) => x.name === playerMoveID).physicalDmg * (1 - computerMoves.find((x) => x.name === computerMoveID).physicArmorPercents / 100);
+      computer.maxHealth -= mageMoves.find((x) => x.name === playerMoveID).magicDmg * (1 - computerMoves.find((x) => x.name === computerMoveID).magicArmorPercents / 100);
       // damage to player
-      player.maxHealth -= computer.moves[compActionIndex].physicalDmg * (1 - player.moves[playerActionIndex].physicArmorPercents / 100);
-      player.maxHealth -= computer.moves[compActionIndex].magicDmg * (1 - player.moves[playerActionIndex].magicArmorPercents / 100);
+      player.maxHealth -= computerMoves.find((x) => x.name === computerMoveID).physicalDmg * (1 - mageMoves.find((x) => x.name === playerMoveID).physicArmorPercents / 100);
+      player.maxHealth -= computerMoves.find((x) => x.name === computerMoveID).magicDmg * (1 - mageMoves.find((x) => x.name === playerMoveID).magicArmorPercents / 100);
       // round the results
       computer.maxHealth = Math.round(computer.maxHealth);
       player.maxHealth = Math.round(player.maxHealth);
+
+      // set cooldown
+      mageMoves.forEach((el) => {
+        if (mageMoves.find((x) => x.name === playerMoveID).cooldown > 0) {
+          mageMoves.find((x) => x.name === playerMoveID).isOnCooldown = true;
+        }
+      });
+
+      computerMoves.forEach((el) => {
+        if (computerMoves.find((x) => x.name === computerMoveID).cooldown > 0) {
+          computerMoves.find((x) => x.name === computerMoveID).isOnCooldown = true;
+        }
+      });
+
+      // reset cooldown
+      mageMoves.forEach((el) => {
+        if (el.currentCooldown === el.cooldown) {
+          el.isOnCooldown = false;
+          el.currentCooldown = 0;
+        }
+
+        // increment currentCooldown
+        if (el.isOnCooldown === true) {
+          el.currentCooldown += 1;
+        }
+      });
+
+      computerMoves.forEach((el) => {
+        if (el.currentCooldown === el.cooldown) {
+          el.isOnCooldown = false;
+          el.currentCooldown = 0;
+        }
+
+        // increment currentCooldown
+        if (el.isOnCooldown === true) {
+          el.currentCooldown += 1;
+        }
+      });
+
+      // console.log(mageMoves);
+      console.log(computerMoves);
 
       if (computer.maxHealth > 0 && player.maxHealth > 0) {
         console.log(`Был нанесен урон. \nЗдоровье Лютого теперь: ${computer.maxHealth}, Здоровье Евстафия теперь ${player.maxHealth}\n`);
@@ -59,4 +132,4 @@ function startGame(player1, player2) {
   }
 }
 
-startGame(monster, mage);
+startGame();

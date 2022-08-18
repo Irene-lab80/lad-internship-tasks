@@ -5,6 +5,8 @@
     "import/extensions": "off",
     "no-console": "off",
     "max-len": "off",
-    "no-plusplus": "warn"
+    "no-plusplus": "warn",
+    "no-param-reassign": "warn",
+    "no-loop-func": "off"
   }
 }

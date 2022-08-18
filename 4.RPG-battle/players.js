@@ -1,5 +1,5 @@
 export const monster = {
-  maxHealth: 10,
+  maxHealth: 20,
   name: 'Лютый',
   moves: [
     {
